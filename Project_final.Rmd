@@ -1,0 +1,549 @@
+---
+title: " Stat240 Project on Madison Admissions Data"
+author: 'Authors: Ojas Bajaj, Nadia Choi, Aditya Dalal, Jian Zhou'
+date: "2023-04-10"
+output: html_document
+---
+
+```{r, echo = FALSE, message = FALSE}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+source("../scripts/viridis.R")
+source("../scripts/ggprob.R")
+```
+
+
+
+```{r, echo = FALSE, message = FALSE}
+general_enrollment = read_csv("../Data/general_enrollment.csv")
+admitted_sex = read_csv("../Data/admitted_sex.csv")
+applicant_sex = read_csv("../Data/applicant_sex.csv")
+applicant_residence = read_csv("../Data/applicant_residence.csv")
+admitted_residence = read_csv("../Data/admitted_residence.csv")
+applicant_race = read_csv("../Data/applicant_race.csv")
+admitted_race = read_csv("../Data/admitted_race.csv")
+applicant_generation = read_csv("../Data/applicant_generation.csv")
+admitted_generation = read_csv("../Data/admitted_generation.csv")
+
+
+```
+
+**INTRODUCTION**
+
+> Acceptance rates in universities is a key factor determining the level of competition for admission. This is no different for the marquise university of Wisconsin, the University of Wisconsin Madison. In recent years, the university has seen a significant spike in the number of applications it is receiving forcing it to start changing acceptance rates or to look for alterations in the overall yield rate. The trend in overall decreases in admission rate has lead to questions about why such a decline is even happening and our proposals aims to compare an inference population compared to the true population to see if the admission rate by different factors is determined by chance or by different factors. More specifically, we hope to analyze the impact of the admission pool on the admission process. By doing so, we are hoping to inform hopeful students to understand what admissions look like at the University of Wisconsin Madison. Ultimately, the main thesis and point is that there is a decline of the overall acceptance rate of Madison due to changes in the overall admission pool.
+
+**BACKGROUND** 
+
+>The data set we collected provides information on individuals that applied to the university of Wisconsin Madison. It was collected via students applying to the college and taking the information to create a overarching report that is given to the state and federal government. The dataset contained data from 2010 to 2022, with factors that were distributed into various factors - race, gender, generation and in-state or out of state. For this specific project, the fators chosen were of race, gender, and generation. This data was distributed into two main sections - applicant and admitted students. In order to perform the required statistical tests, the 2022 admission data was used to find statistical evidence for the most recent data available, and to normalize for the effects of COVID. Then, the proportions of admitted students for each factor were calculated in order to perforom tests by dividing admitted students by the number of applicants for each factor for 2022. 
+
+>https://uwmadison.app.box.com/s/a6924b0oncjo12hq7kjzdvl6c4yirjob 
+
+>Throughout the last couple decades there has been consistent increase to the number of people applying to UW Madison, and throughout those years the demographic information of those applying and being admitted is also significantly changing, and we are attempting to see if the applicant admissions are truly random, which will be statistically supported using a hypothesis test. The approach to this hypothesis test mainly involved forming a binomial distribution of the data for the different factors present in the dataset. This involved identifying a test statistic, finding a null hypothesis and conducting a p-test to find a significance value as well as a 95% confidence interval to identify the statistical significance. Specifically, the most important aspect of this was to identify the null-hypothesis probability. The approach to find this probability could be conducted through multiple methods - possible approaches were to match the null hypothesis of each factor to average admission or dividing the number of factors (say the number of races) by 1, and performing a binomail distribution on it. 
+
+>There are some issues with the data set we are working with. The sample size of the data is massive, so when we did our hypothesis testing, there is a lot of evidence proving against the null b/c the sample size is so high, and we are not certain about all the methods to use to interpret these results besides using hypothesis testing at the moment. Additionally, there could be factors that have an impact on both the dependent and independent variables, creating an erroneous relationship. For instance, if the study reveals that applicants with higher SAT scores are more likely to be accepted, it may be due to a complicating factor such as applicants' high school GPAs. Lastly, the statistical analysis may reveal a relationship between variables that are outside this dataset, but it does not always suggest a causal relationship. It might not necessarily follow that sports have a direct bearing on admission choices, for instance, if the data reveals that students who participate in sports are more likely to be accepted. Therefore, a certain admission rate may not entirely be dependent on race.
+
+
+>We intend to take the information and to see if the selection of applicants based on race is truly random, or if it is not random (Against the null). This will aid us in determining whether social factors affect admissions of students compared to a completely random outcome. 
+>
+
+>
+
+
+
+
+**More contextual information** regarding the acceptance rate of any given race throughout the years which we are analyzing for the graphs below for more given context. 
+```{r, echo = FALSE}
+proporiton_data = applicant_race %>%
+  mutate(White = admitted_race$White/White, Asian = admitted_race$Asian/Asian, hispanic_latino = admitted_race$Hispanic_Latino/hispanic_latino, International = admitted_race$International/International, African_American = admitted_race$African_American/African_American, unknown = admitted_race$unknown/unknown, more_than_1 = admitted_race$more_than_1/more_than_1)
+  
+
+```
+
+
+**Contextual information** Graph displaying the immense spike in applicants in the University of Wisconsin system over the last couple decades. 
+```{r, echo = FALSE, message = FALSE}
+ggplot(general_enrollment, aes(x = year, y = applicants, )) +
+  geom_line()
+
+
+ggplot(applicant_race, aes(x = fall_term)) +
+  geom_line(aes(y = White, color = 'White'),) +
+  geom_line(aes(y = Asian, color = 'Asian')) + 
+  geom_line(aes(y = hispanic_latino, color = "Hispanic / latino")) +
+  geom_line(aes(y = International, color ='International')) + 
+  geom_line(aes(y = African_American, color = 'African_American'))+
+  geom_line(aes(y = unknown , color = "Unknown")) +
+  geom_line(aes(y = more_than_1, color = "More than one race")) +
+  ylab("Race Applicanats") +
+  labs(color = "Race") +
+  ggtitle("Total applicants by race") +
+  scale_x_continuous(breaks = 2010:2022, labels = 2010:2022)
+  
+
+ggplot(proporiton_data, aes(x = fall_term)) +
+  geom_line(aes(y = White, color = 'White')) +
+  geom_line(aes(y = Asian, color = "Asian")) + 
+  geom_line(aes(y = hispanic_latino, color = "Hispanic / latino")) +
+  geom_line(aes(y = International,color = "International")) + 
+  geom_line(aes(y = African_American, color = "African American")) +
+  geom_line(aes(y = unknown, color = "Unknown")) +
+  geom_line(aes(y = more_than_1, color = "More than one race")) +
+  ylab("Acceptance Rate") +
+  ggtitle("Admissions rate by race") +
+  scale_x_continuous(breaks = 2010:2022, labels = 2010:2022)
+```
+
+
+
+
+
+
+
+
+**ANALYSIS**
+
+
+**We use p-tests to determine if certain factor proportions are truly random, and b/c the data set is so large most of our tests came out with p values that are 0 or very close to zero. **
+
+
+*Hispanic:*
+
+Hypothesis Testing for Hispanics Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(4271,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=2921]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(4271,0.6)]
+
+5. P-Value: [The p value(~0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of Hispanics admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+hispanic_std = sqrt(4271 * 0.6 * 0.4) 
+
+hispanic_std = sqrt(((2921 - (4271*0.6))^2/4271))
+hispanic_distance = (2921 - (4271*0.6))/hispanic_std
+
+gbinom(4271, 0.6, scale = TRUE) + 
+  geom_vline(xintercept = 2921, color = "red") +
+  geom_vline(xintercept = (4271*0.6)-(hispanic_std * hispanic_distance), color = "red") +
+  ggtitle("Hispanic UW Madison Admitted Students in 2022")
+  
+pval1 = pbinom((4271*0.6)-(hispanic_std * hispanic_distance), 4271, 0.6) + 
+  (1 - pbinom(2921, 4270, 0.6))
+
+pval1
+
+
+
+```
+
+> The graph represents the binomial distribution of Hispanic admits based on those number of applicants to UW Madison in 2022, with a red vertical line representing the threshold at which the number of Hispanic applicants would be considered unusually low, based on the null hypothesis of a 60% admission rate. The second red line indicated the observed number of Hispanic admits.
+
+
+*More than one race:*
+Hypothesis Testing for More than One Race Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(2303,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=1530]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(2303,0.6)]
+
+5. P-Value: [The p value(~0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of more than race admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+
+```{r, echo = FALSE, message = FALSE}
+more_than_1_std = sqrt(2303 * 0.6 * 0.4)
+more_than_1_distance = (1530 - (2303 * 0.6))/more_than_1_std
+
+gbinom(2303, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 1530, color = "red") +
+  geom_vline(xintercept = (2303*0.6)-(more_than_1_std * more_than_1_distance), color = "red") +
+  ggtitle("More than One Race UW Madison Admitted Students in 2022")
+
+pval2 = pbinom((2303*0.6)-(more_than_1_std * more_than_1_distance), 2303, 0.6) +
+  (1 - pbinom(1530, 2302, 0.6))
+
+pval2
+
+```
+
+> The graph represents the binomial distribution of individuals with more than one race admits based on those number of applicants to UW Madison in 2022, with a red vertical line representing the threshold at which the number of individuals with more than one race would be considered unusually low, based on the null hypothesis of a 60% admission rate. The second red line indicated the observed number of individuals with more than one race who were admitted.
+
+*African American:*
+Hypothesis Testing for African American Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(1402,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=827]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(1402,0.6)]
+
+5. P-Value: [The p value(0.43) is greater than 0.05 which does not make it statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0.43, two-sided binomial test), we do not have significant evidence that the proportion of African american admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+african_american_std = sqrt(827 *(0.6) * (0.4))
+african_american_distance = (827-(1402*0.6))/african_american_std
+
+gbinom(1402, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 827, color = "red") +
+  geom_vline(xintercept = (1402*0.6)-(african_american_std * african_american_distance), color = "red") +
+  ggtitle("African_American UW Madison Admitted Students in 2022")
+
+pval3 = pbinom(827, 1402, 0.6) +
+  (1 - pbinom((1402*0.6)-(african_american_std * african_american_distance), 1401, 0.6))
+
+pval3
+```
+
+> The graph represents the binomial distribution of African American admits based on those number of applicants to UW Madison in 2022, with a red vertical line representing African american admits , based on the null hypothesis of a 60% admission rate. The second red line indicated the threshold at which the number of individuals with more than one race would be considered unusually high However, the two vertical red lines are on the binomial distribution, meaning that our p-value will be considerably large and therefore, not statstically significant in rejecting the null.
+
+*Asian:*
+Hypothesis Testing for Asian Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(7233,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=4757]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(7233,0.6)]
+
+5. P-Value: [The p value(~0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of asian admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+std4 = sqrt(7233 * 0.6 * 0.4)
+distance4 = (4757-(7233*0.6))/std4
+
+gbinom(7233, 0.6, scale=TRUE) +
+  geom_vline(xintercept=4757, color="red") +
+  geom_vline(xintercept = (7233*0.6)-(std4 * distance4), color = "red") +
+  ggtitle("Asian UW Madison Admitted Students in 2022") +
+  theme_bw()
+
+pval4 = pbinom((7233*0.6)-(std4 * distance4), 7233, 0.6) +
+  (1 - pbinom(4757, 7232, 0.6))
+
+pval4
+```
+
+> The graph represents the binomial distribution of Asian admits based on those number of applicants to UW Madison in 2022, with the right red vertical line representing the threshold at which the number of individuals with more than one race would be considered unusually high based on the null hypothesis of a 60% admission rate. The left red line indicated the observed number of individuals with Asian race who were admitted.
+
+*White:*
+Hypothesis Testing for White Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(30386,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=13999]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(30386,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of white admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+
+std3 = sqrt(30386 * 0.6 * 0.4)
+distance3 = (13999-(30386*0.6))/std3
+
+
+gbinom(30386, 0.6, scale=TRUE) +
+  geom_vline(xintercept=13999, color="red") +
+  geom_vline(xintercept = (30386*0.6)-(std3* distance3), color = "red") +
+  ggtitle("White UW Madison Admitted Students in 2022") +
+  theme_bw()
+
+pval5 = pbinom(13999, 30386, 0.6) +
+  (1 - pbinom((30386*0.6)-(std3* distance3), 30385, 0.6))
+
+pval5
+```
+
+> The graph represents the binomial distribution of White admits based on those number of applicants to UW Madison in 2022, with the right red vertical line representing the threshold at which the number of individuals with more than one race would be considered unusually high, based on the null hypothesis of a 60% admission rate. The left red line indicated the observed number of individuals with White race who were admitted.
+
+
+*International:*
+Hypothesis Testing for International Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(12339,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=4327]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(12339,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of international admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+
+std2 = sqrt(12339 * 0.6 * 0.4)
+distance2 = (4327-(12339*0.6))/std2
+
+
+gbinom(12339, 0.6, scale=TRUE) +
+  geom_vline(xintercept=4327, color="red") +
+  geom_vline(xintercept = (12339*0.6)-(std2* distance2), color = "red") + 
+  ggtitle("International UW Madison Admitted Students in 2022") + theme_bw()
+
+
+pval6 = pbinom(4327, 12339, 0.6) +
+  (1 - pbinom((12339*0.6)-(std2* distance2), 12338, 0.6))
+
+pval6
+```
+
+> The graph represents the binomial distribution of International admits based on those number of applicants to UW Madison in 2022, with the right red vertical line representing the threshold at which the number of individuals that are international would be considered unusually high, based on the null hypothesis of a 60% admission rate. The left red line indicated the observed number of International individuals that were admitted.
+
+
+
+**Unknown:**
+Hypothesis Testing for unknown Admitted in 2022:
+
+1. Model: [ X∣p∼Binomial(2224,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=1132]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(2224,0.6)]
+
+5. P-Value: [The p value(~0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of unknown admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+std1 = sqrt(2224 * 0.6 * 0.4)
+distance1 = (1132-(2224*0.6))/std1
+
+
+gbinom(2224, 0.6, scale=TRUE) +
+  geom_vline(xintercept=1132, color="red") +
+  geom_vline(xintercept = (2224*0.6)-(std1* distance1), color = "red") +
+  ggtitle("Unknown race UW Madison Admitted Students in 2022") +
+  theme_bw()
+
+pval7 = pbinom(1132, 2224, 0.6) +
+  (1 - pbinom((2224*0.6)-(std1* distance1), 2223, 0.6))
+
+pval7
+```
+
+> The graph represents the binomial distribution of Unknown race admits based on those number of applicants to UW Madison in 2022, with the right red vertical line representing the threshold at which the number of unknown race applicants would be considered unusually high, based on the null hypothesis of a 60% admission rate. The left red line indicated the observed number of Unknown race applicants that were admitted.
+
+
+
+
+Hypothesis Testing for Male Admissions in 2022
+
+1. Model: [ X∣p∼Binomial(29575,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=13390]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(29575,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of male applicants admitted to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+male_adm_sd = sqrt(29575 * 0.6 * 0.4)
+
+z3 = (13390-(29575*0.6))/male_adm_sd 
+
+gbinom(29575, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 13390, color = "red") +
+  geom_vline(xintercept = (29575 * 0.6)-(male_adm_sd * z3), color = "red") +
+  ggtitle("Male UW Madison Admitted Students in 2022")
+
+pval8 = pbinom(13390, 29595, 0.6) +
+  (1 - pbinom((29575 * 0.6)-(male_adm_sd * z3), 29594, 0.6))
+
+pval8
+
+```
+
+> The graph displays the binomial distribution of male admits based on those number of applicants to UW Madison in 2022. The first red vertical line indicates the observed number of successful male admits. The second red line (right) represents the threshold at which the number of successful male admits would be considered unusually high/extreme, based on the null hypothesis of a 60% admission rate.
+
+
+Hypothesis Testing for Female Admissions in 2022
+
+1. Model: [ X∣p∼Binomial(30685,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=16156]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(30685,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of female applicants admitted to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+female_adm_sd = sqrt(30685 * 0.6 * 0.4)
+
+z4 = (16156-(30685*0.6))/female_adm_sd
+
+gbinom(30685, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 16156, color = "red") +
+  geom_vline(xintercept = (30685 * 0.6)-(female_adm_sd * z4), color = "red") +
+    ggtitle("Female UW Madison Admitted Students in 2022")
+
+pval9 = pbinom(16156, 30685, 0.6) +
+  (1 - pbinom((30685 * 0.6)-(male_adm_sd * z3), 30684, 0.6))
+
+pval9
+```
+
+> The graph represents the binomial distribution of female admits based on those number of applicants to UW Madison in 2022. The first red vertical line (left) indicates the observed number of successful female admits, based on the null hypothesis of a 60% admission rate. The second red line (right) indicates the number of successful female admits would be considered unusually high/extreme.
+
+
+
+Hypothesis Testing for First Generation Admitted in 2022
+
+1. Model: [ X∣p∼Binomial(9986,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=4253]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(9986,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of first-generation admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+fg_adm_sd = sqrt(9986 * 0.6 * 0.4)
+
+z7 = (4253-(9986 * 0.6))/fg_adm_sd
+
+gbinom(9986, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 4253, color = "red") +
+  geom_vline(xintercept = (9986 * 0.6)-(fg_adm_sd * z7), color = "red") +
+  ggtitle("First Generation UW Madison Admitted Students in 2022")
+
+pval10 = pbinom(4253, 9986, 0.6) +
+  (1 - pbinom((9986 * 0.6)-(fg_adm_sd * z7), 9985, 0.6))
+
+pval10
+```
+
+> The graph represents the binomial distribution of first-generation admits based on those number of applicants to UW Madison in 2022. The red vertical line (left) indicates the observed number of first-generation admits, and the second red line (red) represents the threshold at which the number of first-generation admits would be considered unusually high/extreme, based on the null hypothesis of a 60% admission rate.
+
+Hypothesis Testing for Non First Generation Admitted in 2022
+
+1. Model: [ X∣p∼Binomial(50274,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=25293]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(50274,0.6)]
+
+5. P-Value: [The p value(0) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: [Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of non-first generation admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.]
+
+```{r, echo = FALSE, message = FALSE}
+nfg_adm_sd = sqrt(50274 * 0.6 * 0.4)
+
+z8 = (25293-(50274*0.6))/nfg_adm_sd
+
+gbinom(50274, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 25293, color = "red") +
+  geom_vline(xintercept = (50274 * 0.6)-(nfg_adm_sd * z8), color = "red") +
+  ggtitle("Non First Generation UW Madison Admitted Students in 2022")
+
+pval11 = pbinom(25293, 50274, 0.6) +
+  (1 - pbinom((50274 * 0.6)-(nfg_adm_sd * z8), 50273, 0.6))
+
+pval11
+
+```
+
+
+> The graph represents the binomial distribution of non-first-generation admits based on those number of applicants to UW Madison in 2022. The red vertical line (left) indicates the observed number of non-first-generation admits, based on the null hypothesis of a 60% admission rate, and the second red line (right) represents the threshold at which the number of non-first-generation admits would be considered unusually high.
+
+
+Hypothesis Testing for total Admitted in 2022
+
+1. Model: [ X∣p∼Binomial(60260,p) ]
+
+2. Hypotheses: [H0:p=0.6 Ha:p≠0.6]
+
+3. Test Statistic: [Test statistic is X=29546]
+
+4. Null Hypothesis: [If the null hypothesis is true, then X∼Binomial(60260,0.6)]
+
+5.. P-Value: [The p value(5.529208e-07) is less than 0.05 and 0.01 which makes it highly statistically significant]
+
+6. Interpretation: Based on the statistical evidence (p=0, two-sided binomial test), we have significant evidence that the proportion of total admits to the University of Wisconsin Madison in 2022 is significantly different from 0.6.
+
+```{r, echo = FALSE, message = FALSE}
+total_std = sqrt(60260 * 0.6 * 0.4)
+total_distance =(29546 - (60260 * 0.5))/total_std
+
+gbinom(60260, 0.6, scale = TRUE) +
+  geom_vline(xintercept = 29546, color = "red") +
+  geom_vline(xintercept = (60260*0.6)-(total_std * total_distance), color = "red") +
+  ggtitle("Total UW Madison Admitted Students in 2022")
+
+pval12 = pbinom(29546, 60260, 0.6) +
+  (1 - pbinom((60260*0.6)-(total_std * total_distance), 60259, 0.6))
+
+pval12 
+
+```
+
+> The graph represents the binomial distribution of all admits based on those number of applicants to UW Madison in 2022, with the right vertical line representing the threshold at which the number of all applicants would be considered unusually low, based on the null hypothesis of a 60% admission rate. The left red line indicated the observed number of all admits.
+
+
+
+**Discussion:**
+
+>**Broader Interpretation For Sex:** Since our hypothesis tests for Male UW Madison Admitted Students, and Female UW Madison Admitted Students in 2022 yielded p-values that are less than 0.05 and 0.01 we have determined that there is significant evidence against the null hypothesis (p = 0.6), and showing that the admission rate based on sex for UW Madison in 2022 was not random.
+The conclusion that the admission rate for UW Madison in 2022 based on sex was not random implies that gender played a significant role in the admission process. Since there were more females admitted than men, this could mean that there were differences in the application pools in that there was a greater number of female applicants or that the admission process itself was biased towards the female gender.
+
+>**Broader Interpretation For Race:** Since our hypothesis tests for  yielded p-values that are less than 0.05 and 0.01 we have determined that there is significant evidence against the null hypothesis (p = 0.6), and showing that the admission rate based on race for UW Madison in 2022 was not random. However, there was one race, African Americans, which yielded a result that showed their admission into the school could have been random. In the context that the race with the highest number of admits was white, this suggests that there may be a bias in the admission process towards white students. However, it is important to note that this interpretation does not provide any information about the size of applicant pools for each race.
+
+>**Broader Interpretation for Generation:** Since our hypothesis tests for first-generation and non-first generation students admitted to UW Madison in 2022 yielded p-values that are less than 0.05 and 0.01 we have determined that there is significant evidence against the null hypothesis (p = 0.6), and that the admission rate for UW Madison in 2022 based on first-generation status was not random. A large majority of admits were first-generation, which suggests that the difference in admission rates could be in favor of non first-generation students.This conclusion is most likely influenced by the significantly larger pool of non first-generation applicants (50274 non-first gen vs 9986 first gen).
+
+
+>**Shortcomings of Analysis:** A shortcoming of our data is that we are only analyzing the data from a singular school year (2022). If we were to evaluate and compare data from a larger sample of school years we could obtain a more accurate understanding of application and admission trends. Additionally, to make the analysis more accurate we should investigate if there is correlation between the characteristics of applicants and admits as well as what factors are most important in the acceptance criteria. As discussed above, correlation does not indicate causaiton, and differences in admission rates as well as p-valeus for each of the factors may be influenced by other factors that may compound to cause such differences. One other flaw of our analyses is that some of our graphs provided are not very legible. The binomial distributions are small and difficult to read without zooming in which makes them less effective visuals for analyses. Additionally, the p-test has a built-in restriction that can be affected by sample size, which can result in smaller p-values even when the effect size is small. This implies that a finding may not be practically significant even if it is statistically significant. 
+
+>**Future Directions for Additional Work**: Based on the shortcomings of our current analysis it would be beneficial for us to further explore questions such as: 
+
+>1.What are the most important factors in the application/admissions process? The causality between difference in other factors could possible be explored through case studies and surveys that combine these statistical relations with other empirical studies
+
+>2.Are there predetermined limits on the number of of people who can be accepted from each area of residence? Look at trends of what percentage of applicants are from each residence over the past decade.
+
+>3.What is there correlation between the different characteristics of applicants/admits?. We could find correlation by plotting two different characteristics on a graph such as hispanic and male applicants.  
+
+>4.Analyse using a regression model. For alternative methods of analyzing our current question of interest we do not have current knowledge of another method, however future study of other statistical methods will help support these conclusions through multiple methods.
+
